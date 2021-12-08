@@ -13,6 +13,17 @@
 		<version.org.kie>7.62.0.Final</version.org.kie>
 	</properties>
 
+	<distributionManagement>
+		<repository>
+			<id>Belfius-BizDevOps</id>
+			<url>https://pkgs.dev.azure.com/Belfius-AzureCloud/_packaging/Belfius-BizDevOps/maven/v1</url>
+		</repository>
+		<snapshotRepository>
+			<id>Belfius-BizDevOps</id>
+			<url>https://pkgs.dev.azure.com/Belfius-AzureCloud/_packaging/Belfius-BizDevOps/maven/v1</url>
+		</snapshotRepository>
+	</distributionManagement>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.jbpm</groupId>
@@ -26,7 +37,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugin</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>${compiler-plugin.version}</version>								
+				<version>${compiler-plugin.version}</version>
 				<configuration>
 					<parameters>true</parameters>
 				</configuration>
