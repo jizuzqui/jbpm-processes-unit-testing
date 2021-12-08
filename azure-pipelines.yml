@@ -10,6 +10,9 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
+- task: MavenAuthenticate@0
+  inputs:
+    artifactsFeeds: 'Belfius-BizDevOps'
 - task: Maven@3
   inputs:
     mavenPomFile: 'pom.xml'
@@ -20,6 +23,3 @@ steps:
     publishJUnitResults: true
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
     goals: 'deploy'
-- task: MavenAuthenticate@0
-  inputs:
-    artifactsFeeds: 'Belfius-BizDevOps'
