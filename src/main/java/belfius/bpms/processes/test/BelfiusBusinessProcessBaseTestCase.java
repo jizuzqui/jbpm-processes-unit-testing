@@ -208,10 +208,21 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 	//////////////////////////////////////
 
 	/**
+	 * Asserts User Task Active
+	 * @param processInstanceId The process instance which the user task belongs to.
+	 * @param userTaskName The label of the user task in the BPMN diagram.
+	 */
+	public void assertUserTaskActive(Long processInstanceId, String userTaskName) {
+		assertNodeActive(processInstanceId, ksession, userTaskName);
+	}
+
+	
+	
+	/**
 	 * Asserts User Task Completed
-	 * @param ksession Active KieSession
-	 * @param workItem The active WorkItem whose name, status (active), inputs and outputs will be asserted.
-	 * @param activityName The name of the activity that is expected to be asserted.
+	 * @param processInstanceId The process instance which the user task belongs to.
+	 * @param userTaskName The label of the user task in the BPMN diagram.
+	 * @param userId The performer of the user task.
 	 * @param inputs Input data to be asserted in the WorkItem.
 	 * @param outputs Output data to be used when completing the WorkItem.
 	 */
@@ -248,5 +259,4 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 		Task updatedTask = taskService.getTaskById(targetUserTask.getId());
 		assertEquals(updatedTask.getTaskData().getStatus(), Status.Completed);
 	}
-
 }
