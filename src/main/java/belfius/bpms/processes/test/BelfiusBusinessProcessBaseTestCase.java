@@ -11,6 +11,8 @@ import java.util.Map;
 import org.drools.core.command.runtime.process.SetProcessInstanceVariablesCommand;
 import org.jbpm.test.JbpmJUnitBaseTestCase;
 import org.junit.Before;
+import org.kie.api.io.Resource;
+import org.kie.api.io.ResourceType;
 import org.kie.api.runtime.KieSession;
 import org.kie.api.runtime.manager.RuntimeEngine;
 import org.kie.api.runtime.process.ProcessInstance;
@@ -33,7 +35,7 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 	private TaskService taskService = null;
 	private RuntimeEngine runtimeEngine = null;
 	private KieSession ksession = null;
-	private String[] processDefinitionFileLocation = null;
+	private Map<String, ResourceType> definitionsMap = null;
 	private Map<Long, WorkItem> activeWorkItemMap = null;
 
 	/**
@@ -44,12 +46,28 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 	 */
 	public BelfiusBusinessProcessBaseTestCase(boolean setupDataSource, boolean sessionPersistence, String... processDefinitionFileLocation) {
 		super(setupDataSource, sessionPersistence);
-		this.processDefinitionFileLocation = processDefinitionFileLocation;
+
+		definitionsMap = new HashMap<String, ResourceType>();
+		
+		for (String definition : processDefinitionFileLocation) {
+			if(definition.endsWith(".dmn"))
+				definitionsMap.put(definition, ResourceType.DMN);
+			else if(definition.endsWith(".bpmn") || definition.endsWith(".bpmn2"))
+				definitionsMap.put(definition, ResourceType.BPMN2);
+		}
 	}
 
 	public BelfiusBusinessProcessBaseTestCase(boolean setupDataSource, String persistenceUnitName, boolean sessionPersistence, String... processDefinitionFileLocation) {
 		super(setupDataSource, sessionPersistence, persistenceUnitName);
-		this.processDefinitionFileLocation = processDefinitionFileLocation;
+
+		definitionsMap = new HashMap<String, ResourceType>();
+		
+		for (String definition : processDefinitionFileLocation) {
+			if(definition.endsWith(".dmn"))
+				definitionsMap.put(definition, ResourceType.DMN);
+			else if(definition.endsWith(".bpmn") || definition.endsWith(".bpmn2"))
+				definitionsMap.put(definition, ResourceType.BPMN2);
+		}
 	}
 
 
@@ -59,7 +77,7 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 
 	@Before
 	public void buildRuntimeEnvironment () {
-		createRuntimeManager(Strategy.PROCESS_INSTANCE, "runtimeManagerInstance", processDefinitionFileLocation);
+		createRuntimeManager(Strategy.PROCESS_INSTANCE, definitionsMap);
 		runtimeEngine = getRuntimeEngine(ProcessInstanceIdContext.get());
 		taskService = runtimeEngine.getTaskService();
 		ksession = runtimeEngine.getKieSession();
@@ -83,7 +101,7 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 		}	
 	}
 	
-
+	
 	//////////////////////////////////////
 	// Process Instance operations
 	//////////////////////////////////////	
