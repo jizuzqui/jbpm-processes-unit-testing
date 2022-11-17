@@ -246,9 +246,13 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 	 */
 	public void assertUserTaskCompleted(Long processInstanceId, String userTaskName, String userId, Map<String, Object> inputs, Map<String, Object> outputs) {
 
+		assertUserTaskActive(processInstanceId, userTaskName);
+		
 		// We've found the user task in the user task list.
 		List<TaskSummary> taskList = taskService.getTasksAssignedAsPotentialOwner(userId, "en-uk");
 		TaskSummary targetUserTask = null;
+		Task updatedTask = null;
+		Status taskStatus = null;
 
 		for (TaskSummary taskSummary : taskList) {
 			if(userTaskName.equals(taskSummary.getName())) {
@@ -260,21 +264,33 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 		// We've found the user task in the user task list.
 		assertNotNull(targetUserTask);
 
+		updatedTask = taskService.getTaskById(targetUserTask.getId());
+		taskStatus = updatedTask.getTaskData().getStatus();
+		
 		// The task must be ready to be handled.
-		assertNotEquals(targetUserTask, Status.Completed);
-		assertNotEquals(targetUserTask, Status.Created);
-		assertNotEquals(targetUserTask, Status.Error);
-		assertNotEquals(targetUserTask, Status.Failed);
-		assertNotEquals(targetUserTask, Status.Obsolete);
-		assertNotEquals(targetUserTask, Status.Suspended);
-		assertNotEquals(targetUserTask, Status.Exited);
+		assertNotEquals(taskStatus, Status.Completed);
+		assertNotEquals(taskStatus, Status.Created);
+		assertNotEquals(taskStatus, Status.Error);
+		assertNotEquals(taskStatus, Status.Failed);
+		assertNotEquals(taskStatus, Status.Obsolete);
+		assertNotEquals(taskStatus, Status.Suspended);
+		assertNotEquals(taskStatus, Status.Exited);
 
-		// Complete the task.
+		// Claim the task if necessary
+		if(taskStatus.equals(Status.Ready)) {
+			taskService.claim(targetUserTask.getId(), userId);
+			updatedTask = taskService.getTaskById(targetUserTask.getId());
+			taskStatus = updatedTask.getTaskData().getStatus(); 
+			assertEquals(taskStatus, Status.Reserved);
+		}
+		
+		// Complete the task.			
 		taskService.start(targetUserTask.getId(), userId);
 		taskService.complete(targetUserTask.getId(), userId, outputs);
 
 		// Check that the task is completed.
-		Task updatedTask = taskService.getTaskById(targetUserTask.getId());
-		assertEquals(updatedTask.getTaskData().getStatus(), Status.Completed);
+		updatedTask = taskService.getTaskById(targetUserTask.getId());
+		taskStatus = updatedTask.getTaskData().getStatus();
+		assertEquals(taskStatus, Status.Completed);
 	}
 }
