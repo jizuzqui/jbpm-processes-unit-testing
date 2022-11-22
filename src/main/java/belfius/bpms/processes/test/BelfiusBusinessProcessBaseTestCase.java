@@ -4,11 +4,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.sql.PseudoColumnUsage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.drools.core.command.runtime.process.SetProcessInstanceVariablesCommand;
+import org.drools.core.time.impl.PseudoClockScheduler;
 import org.jbpm.test.JbpmJUnitBaseTestCase;
 import org.junit.Before;
 import org.kie.api.io.Resource;
@@ -77,6 +80,8 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 
 	@Before
 	public void buildRuntimeEnvironment () {
+		System.setProperty("drools.clockType", "pseudo");
+		
 		createRuntimeManager(Strategy.PROCESS_INSTANCE, definitionsMap);
 		runtimeEngine = getRuntimeEngine(ProcessInstanceIdContext.get());
 		taskService = runtimeEngine.getTaskService();
@@ -141,8 +146,9 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 	 * @param inputs
 	 * @param processInstanceId
 	 */
-	protected void signalEvent(String signalId, Object inputs, Long processInstanceId) {		
-		ksession.signalEvent(signalId, inputs, processInstanceId);
+	protected void signalEvent(String signalId, Map<String, Object> signalOutputs, Long processInstanceId) {
+		setProcessVariables(processInstanceId, signalOutputs);
+		ksession.signalEvent(signalId, null, processInstanceId);
 	}
 
 	/**
@@ -157,7 +163,17 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 		command.setVariables(processUpdatedVariables);
 		ksession.execute(command);
 	}
-
+	
+	
+	//////////////////////////////////////
+	// Timer Operations
+	//////////////////////////////////////
+	
+	protected void advanceTime(long time, TimeUnit timeUnit) {
+		PseudoClockScheduler sessionClock = ksession.getSessionClock();
+		sessionClock.advanceTime(time, timeUnit);
+	}
+	
 
 	//////////////////////////////////////
 	// Service Task Assertions
@@ -246,9 +262,13 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 	 */
 	public void assertUserTaskCompleted(Long processInstanceId, String userTaskName, String userId, Map<String, Object> inputs, Map<String, Object> outputs) {
 
+		assertUserTaskActive(processInstanceId, userTaskName);
+		
 		// We've found the user task in the user task list.
 		List<TaskSummary> taskList = taskService.getTasksAssignedAsPotentialOwner(userId, "en-uk");
 		TaskSummary targetUserTask = null;
+		Task updatedTask = null;
+		Status taskStatus = null;
 
 		for (TaskSummary taskSummary : taskList) {
 			if(userTaskName.equals(taskSummary.getName())) {
@@ -260,21 +280,33 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 		// We've found the user task in the user task list.
 		assertNotNull(targetUserTask);
 
+		updatedTask = taskService.getTaskById(targetUserTask.getId());
+		taskStatus = updatedTask.getTaskData().getStatus();
+		
 		// The task must be ready to be handled.
-		assertNotEquals(targetUserTask, Status.Completed);
-		assertNotEquals(targetUserTask, Status.Created);
-		assertNotEquals(targetUserTask, Status.Error);
-		assertNotEquals(targetUserTask, Status.Failed);
-		assertNotEquals(targetUserTask, Status.Obsolete);
-		assertNotEquals(targetUserTask, Status.Suspended);
-		assertNotEquals(targetUserTask, Status.Exited);
+		assertNotEquals(taskStatus, Status.Completed);
+		assertNotEquals(taskStatus, Status.Created);
+		assertNotEquals(taskStatus, Status.Error);
+		assertNotEquals(taskStatus, Status.Failed);
+		assertNotEquals(taskStatus, Status.Obsolete);
+		assertNotEquals(taskStatus, Status.Suspended);
+		assertNotEquals(taskStatus, Status.Exited);
 
-		// Complete the task.
+		// Claim the task if necessary
+		if(taskStatus.equals(Status.Ready)) {
+			taskService.claim(targetUserTask.getId(), userId);
+			updatedTask = taskService.getTaskById(targetUserTask.getId());
+			taskStatus = updatedTask.getTaskData().getStatus(); 
+			assertEquals(taskStatus, Status.Reserved);
+		}
+		
+		// Complete the task.			
 		taskService.start(targetUserTask.getId(), userId);
 		taskService.complete(targetUserTask.getId(), userId, outputs);
 
 		// Check that the task is completed.
-		Task updatedTask = taskService.getTaskById(targetUserTask.getId());
-		assertEquals(updatedTask.getTaskData().getStatus(), Status.Completed);
+		updatedTask = taskService.getTaskById(targetUserTask.getId());
+		taskStatus = updatedTask.getTaskData().getStatus();
+		assertEquals(taskStatus, Status.Completed);
 	}
 }
