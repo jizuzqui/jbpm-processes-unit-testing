@@ -5,13 +5,19 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.sql.PseudoColumnUsage;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.drools.core.command.runtime.process.SetProcessInstanceVariablesCommand;
 import org.drools.core.time.impl.PseudoClockScheduler;
+import org.jbpm.process.audit.JPAAuditLogService;
+import org.jbpm.process.audit.NodeInstanceLog;
 import org.jbpm.test.JbpmJUnitBaseTestCase;
 import org.junit.Before;
 import org.kie.api.io.Resource;
@@ -40,6 +46,7 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 	private KieSession ksession = null;
 	private Map<String, ResourceType> definitionsMap = null;
 	private Map<Long, WorkItem> activeWorkItemMap = null;
+	private JPAAuditLogService auditLogService = null;
 
 	/**
 	 * Allows to load multiple process definition files (.bpmn)
@@ -87,6 +94,7 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 		taskService = runtimeEngine.getTaskService();
 		ksession = runtimeEngine.getKieSession();
 		activeWorkItemMap = new HashMap<Long, WorkItem>();
+		auditLogService = (JPAAuditLogService)runtimeEngine.getAuditService();
 	}
 
 	/**
@@ -162,6 +170,16 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 		command.setProcessInstanceId(processInstanceId);
 		command.setVariables(processUpdatedVariables);
 		ksession.execute(command);
+	}
+	
+	/**
+	 * Retrieves the value of a process variable by its id.
+	 * @param processInstanceId
+	 * @param variableId
+	 */
+	protected Object getProcessVariables(Long processInstanceId, String variableId) {
+
+		return getProcessVariables(processInstanceId, variableId);
 	}
 	
 	
@@ -308,5 +326,48 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 		updatedTask = taskService.getTaskById(targetUserTask.getId());
 		taskStatus = updatedTask.getTaskData().getStatus();
 		assertEquals(taskStatus, Status.Completed);
+	}
+
+
+	//////////////////////////////////////
+	// Debug operations
+	//////////////////////////////////////
+	
+	public void printActiveNodes (Long processInstanceId) {
+		List<NodeInstanceLog> nodeInstanceLogList = auditLogService.findNodeInstances(processInstanceId);
+		Map<String, NodeInstanceLog> activeNodes = new HashMap<String, NodeInstanceLog>();
+		
+		for (NodeInstanceLog nodeInstanceLog : nodeInstanceLogList) {
+			if(nodeInstanceLog.getType().equals(NodeInstanceLog.TYPE_ENTER)) {
+				activeNodes.put(nodeInstanceLog.getNodeId(), nodeInstanceLog);
+			}
+			else {
+				activeNodes.remove(nodeInstanceLog.getNodeId());
+			}
+		}
+		
+		Collection<NodeInstanceLog> nodeInstanceLogCollection = activeNodes.values();
+		for (NodeInstanceLog nodeInstanceLog : nodeInstanceLogCollection) {
+			System.out.println(nodeInstanceLog.getNodeType() + " - " + nodeInstanceLog.getNodeName());
+		}
+		
+	}
+	
+	public void printCompletedNodes (Long processInstanceId) {		
+		List<NodeInstanceLog> completedNodeInstanceLogList = auditLogService.findNodeInstances(processInstanceId);
+		
+		for (NodeInstanceLog nodeInstanceLog : completedNodeInstanceLogList) {
+			if(nodeInstanceLog.getType().equals(NodeInstanceLog.TYPE_EXIT)) {
+				System.out.println(nodeInstanceLog.getNodeType() + " - " + nodeInstanceLog.getNodeName());
+			}
+		}
+	}
+	
+	public void printNodeInstanceList (Long processInstanceId) {		
+		List<NodeInstanceLog> completedNodeInstanceLogList = auditLogService.findNodeInstances(processInstanceId);
+		
+		for (NodeInstanceLog nodeInstanceLog : completedNodeInstanceLogList) {
+			System.out.println(nodeInstanceLog.getNodeType() + " - " + nodeInstanceLog.getNodeName() + " - " + (nodeInstanceLog.getType() == 0 ? "Entered" : "Completed"));
+		}
 	}
 }
