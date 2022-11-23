@@ -1,0 +1,23 @@
+<configuration>
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <!-- encoders are assigned the type
+         ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %level %logger %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="org.drools.core.xml.ExtensibleXmlParser" level="OFF"/>
+  <logger name="org.hibernate" level="ERROR"/>
+  <logger name="org.jbpm.runtime.manager.impl" level="ERROR"/>
+  <logger name="org.jbpm.test.persistence.util.PersistenceUtil" level="ERROR"/>
+  <logger name="org.jbpm.process.audit" level="ERROR"/>
+  
+  <!-- Strictly speaking, the level attribute is not necessary since -->
+  <!-- the level of the root level is set to DEBUG by default.       -->
+  <root level="INFO">
+    <appender-ref ref="STDOUT" />
+  </root>
+
+</configuration>

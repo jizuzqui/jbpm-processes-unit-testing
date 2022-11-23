@@ -59,7 +59,10 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 
 		definitionsMap = new HashMap<String, ResourceType>();
 		
+		logger.debug("Loading assets with process and decision definitions...");
+		
 		for (String definition : processDefinitionFileLocation) {
+			logger.debug(definition + " loaded");
 			if(definition.endsWith(".dmn"))
 				definitionsMap.put(definition, ResourceType.DMN);
 			else if(definition.endsWith(".bpmn") || definition.endsWith(".bpmn2"))
@@ -72,7 +75,10 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 
 		definitionsMap = new HashMap<String, ResourceType>();
 		
+		logger.debug("Loading assets with process and decision definitions...");
+		
 		for (String definition : processDefinitionFileLocation) {
+			logger.debug(definition + " loaded");
 			if(definition.endsWith(".dmn"))
 				definitionsMap.put(definition, ResourceType.DMN);
 			else if(definition.endsWith(".bpmn") || definition.endsWith(".bpmn2"))
@@ -89,12 +95,16 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 	public void buildRuntimeEnvironment () {
 		System.setProperty("drools.clockType", "pseudo");
 		
+		logger.debug("Creating Runtime Environment...");
+		
 		createRuntimeManager(Strategy.PROCESS_INSTANCE, definitionsMap);
 		runtimeEngine = getRuntimeEngine(ProcessInstanceIdContext.get());
 		taskService = runtimeEngine.getTaskService();
 		ksession = runtimeEngine.getKieSession();
 		activeWorkItemMap = new HashMap<Long, WorkItem>();
 		auditLogService = (JPAAuditLogService)runtimeEngine.getAuditService();
+		
+		logger.debug("Runtime Environment successfully created.");
 	}
 
 	/**
@@ -103,11 +113,15 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 	 */
 	protected void registerWorkItemHandlers(ProcessNode... workItems) {
 
+		logger.debug("Registering WorkItemHandlers...");
+		
 		for (ProcessNode processNode : workItems) {
 			// For the time being, only service tasks will be supported.
 			// However, some other nodes should be foreseen in the near future (SUBPROCESS, EVENT_SUBPROCESS, BUSINESS_RULE).
-			if(processNode.getNodeType().equals(NodeType.SERVICE_TASK))
+			if(processNode.getNodeType().equals(NodeType.SERVICE_TASK)) {
 				ksession.getWorkItemManager().registerWorkItemHandler(processNode.getNodeId(), getTestWorkItemHandler());
+				logger.debug("WorkItemHandler for Service Task " + processNode.getNodeId() + " successfully registered.");
+			}
 			else
 				logger.warn(processNode.getNodeType() + " not supported, skipping it.");
 
@@ -177,9 +191,9 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 	 * @param processInstanceId
 	 * @param variableId
 	 */
-	protected Object getProcessVariables(Long processInstanceId, String variableId) {
+	protected Object getProcessVariable(Long processInstanceId, String variableId) {
 
-		return getProcessVariables(processInstanceId, variableId);
+		return getVariableValue(variableId, processInstanceId, ksession);
 	}
 	
 	
@@ -187,6 +201,11 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 	// Timer Operations
 	//////////////////////////////////////
 	
+	/**
+	 * Simulates a change in the current date. Useful to simulate timer expirations in a process instance.
+	 * @param time The amount of time to be advanced.
+	 * @param timeUnit The time unit (days, hours, minutes...)
+	 */
 	protected void advanceTime(long time, TimeUnit timeUnit) {
 		PseudoClockScheduler sessionClock = ksession.getSessionClock();
 		sessionClock.advanceTime(time, timeUnit);
@@ -333,6 +352,10 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 	// Debug operations
 	//////////////////////////////////////
 	
+	/**
+	 * Prints the active node instances given a process instance id
+	 * @param processInstanceId
+	 */
 	public void printActiveNodes (Long processInstanceId) {
 		List<NodeInstanceLog> nodeInstanceLogList = auditLogService.findNodeInstances(processInstanceId);
 		Map<String, NodeInstanceLog> activeNodes = new HashMap<String, NodeInstanceLog>();
@@ -348,26 +371,34 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 		
 		Collection<NodeInstanceLog> nodeInstanceLogCollection = activeNodes.values();
 		for (NodeInstanceLog nodeInstanceLog : nodeInstanceLogCollection) {
-			System.out.println(nodeInstanceLog.getNodeType() + " - " + nodeInstanceLog.getNodeName());
+			logger.info(nodeInstanceLog.getNodeType() + " - " + nodeInstanceLog.getNodeName());
 		}
 		
 	}
 	
+	/**
+	 * Prints the completed node instances given a process instance id
+	 * @param processInstanceId
+	 */
 	public void printCompletedNodes (Long processInstanceId) {		
 		List<NodeInstanceLog> completedNodeInstanceLogList = auditLogService.findNodeInstances(processInstanceId);
 		
 		for (NodeInstanceLog nodeInstanceLog : completedNodeInstanceLogList) {
 			if(nodeInstanceLog.getType().equals(NodeInstanceLog.TYPE_EXIT)) {
-				System.out.println(nodeInstanceLog.getNodeType() + " - " + nodeInstanceLog.getNodeName());
+				logger.info(nodeInstanceLog.getNodeType() + " - " + nodeInstanceLog.getNodeName());
 			}
 		}
 	}
 	
+	/**
+	 * Prints the full ordered nodeInstance log for a processInstanceId. It prints both node starts and completions.
+	 * @param processInstanceId
+	 */
 	public void printNodeInstanceList (Long processInstanceId) {		
 		List<NodeInstanceLog> completedNodeInstanceLogList = auditLogService.findNodeInstances(processInstanceId);
 		
 		for (NodeInstanceLog nodeInstanceLog : completedNodeInstanceLogList) {
-			System.out.println(nodeInstanceLog.getNodeType() + " - " + nodeInstanceLog.getNodeName() + " - " + (nodeInstanceLog.getType() == 0 ? "Entered" : "Completed"));
+			logger.info(nodeInstanceLog.getNodeType() + " - " + nodeInstanceLog.getNodeName() + " - " + (nodeInstanceLog.getType() == 0 ? "Entered" : "Completed"));
 		}
 	}
 }
