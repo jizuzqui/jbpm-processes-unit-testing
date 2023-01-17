@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>belfius.bpms</groupId>
 	<artifactId>jbpm-processes-unit-testing</artifactId>
-	<version>1.6.1</version>
+	<version>1.6.2-SNAPSHOT</version>
 	
 	<properties>
 		<compiler-plugin.version>3.8.1</compiler-plugin.version>
@@ -30,9 +30,24 @@
 			<artifactId>jbpm-test</artifactId>
 			<version>${version.org.kie}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.jbpm</groupId>
+			<artifactId>jbpm-kie-services</artifactId>
+			<version>${version.org.kie}</version>
+		</dependency>
 	</dependencies>
 
 	<build>
+	<testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+        <filtering>false</filtering>
+      </testResource>
+      <testResource>
+        <directory>src/test/filtered-resources</directory>
+        <filtering>true</filtering>
+      </testResource>
+    </testResources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugin</groupId>
