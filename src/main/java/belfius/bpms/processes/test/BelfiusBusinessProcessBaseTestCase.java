@@ -97,7 +97,7 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 		
 		logger.debug("Creating Runtime Environment...");
 		
-		createRuntimeManager(Strategy.PROCESS_INSTANCE, definitionsMap);
+		createRuntimeManager(Strategy.SINGLETON, definitionsMap);
 		runtimeEngine = getRuntimeEngine(ProcessInstanceIdContext.get());
 		taskService = runtimeEngine.getTaskService();
 		ksession = runtimeEngine.getKieSession();
