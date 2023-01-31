@@ -1,0 +1,71 @@
+package ${packagename};
+
+import belfius.bpms.processes.test.model.ProcessNode;
+import belfius.bpms.processes.test.model.ProcessNode.NodeType;
+
+public ${processName} implements Serializable {
+
+ 	/** Serial Version UID. */
+ 	private static final long serialVersionUID = 1L;
+  
+	/**
+	 * Enumeration with all the process nodes (Start Events, intermediate events, end events, service tasks, user tasks).
+	 * Sequence flows and gateways are excluded since they aren't required to be tested
+	 */
+	public enum ${processName}Steps {
+		
+		#set($brRegex = "[^a-zA-Z0-9 -]")
+		
+		/*
+		 * Start Events
+		 */
+		#foreach( $startEvent in $startEvents )
+		 STARTEVENT_${startEvent.nodeName}(new ProcessNode("${startEvent.nodeName}", null, NodeType.START_EVENT)),
+		#end 
+		
+		/*
+		 * Service Tasks
+		 */
+		#foreach( $serviceTask in $serviceTasks )
+		 SERVICETASK_${serviceTask.nodeName.replaceAll($brRegex, "_").replaceAll(" ", "_")}(new ProcessNode("${serviceTask.nodeName}", "${serviceTask.nodeId}", NodeType.SERVICE_TASK)),
+		#end
+		
+		/*
+		 * User Tasks
+		 */
+		#foreach( $userTask in $userTasks )
+		 USERTASK_${userTask.nodeName.replaceAll("\(", "_").replaceAll("\)", "").replaceAll(" ", "_")}(new ProcessNode("${userTask.nodeName}", null, NodeType.USER_TASK)),
+		#end
+		
+		/*
+		 * Intermediate Catching Events
+		 */
+		#foreach( $intermediateCatchingEvent in $intermediateCatchingEvents )
+		 EVENT_${intermediateCatchingEvent.nodeName.replaceAll("\(", "_").replaceAll("\)", "").replaceAll(" ", "_")}(new ProcessNode("${intermediateCatchingEvent.nodeName}", "${intermediateCatchingEvent.nodeId}", NodeType.INTERMEDIATE_CATCHING_EVENT)),
+		#end
+		
+		/*
+		 * End Events
+		 */
+		#foreach( $endEvent in $endEvents )
+		 ENDEVENT_${endEvent.nodeName.replaceAll("\(", "_").replaceAll("\)", "").replaceAll(" ", "_")}(new ProcessNode("${endEvent.nodeName}", null, NodeType.END_EVENT)),
+		#end
+		
+		/*
+		 * End signal Events
+		 */
+		#foreach( $endThrowingSignalEvent in $endThrowingSignalEvents )
+		 ENDSIGNALEVENT_${endThrowingSignalEvent.nodeName.replaceAll("\(", "_").replaceAll("\)", "").replaceAll(" ", "_")}(new ProcessNode("${endThrowingSignalEvent.nodeName}", null, NodeType.END_EVENT)),
+		#end
+
+		private ProcessNode processNode;
+		
+		private ${processName}Steps(ProcessNode processNode) {
+			this.processNode = processNode;
+		}
+
+		public ProcessNode getProcessNode() {
+			return processNode;
+		}
+	}
+}
