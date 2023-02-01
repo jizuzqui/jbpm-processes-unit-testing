@@ -3,7 +3,7 @@ package ${packagename};
 import belfius.bpms.processes.test.model.ProcessNode;
 import belfius.bpms.processes.test.model.ProcessNode.NodeType;
 
-public ${processName} implements Serializable {
+public ${processId}TestHelper implements Serializable {
 
  	/** Serial Version UID. */
  	private static final long serialVersionUID = 1L;
@@ -12,7 +12,7 @@ public ${processName} implements Serializable {
 	 * Enumeration with all the process nodes (Start Events, intermediate events, end events, service tasks, user tasks).
 	 * Sequence flows and gateways are excluded since they aren't required to be tested
 	 */
-	public enum ${processName}Steps {
+	public enum ${processId}Steps {
 		
 		#set($brRegex = "[^a-zA-Z0-9 -]")
 		
@@ -60,7 +60,7 @@ public ${processName} implements Serializable {
 
 		private ProcessNode processNode;
 		
-		private ${processName}Steps(ProcessNode processNode) {
+		private ${processId}Steps(ProcessNode processNode) {
 			this.processNode = processNode;
 		}
 

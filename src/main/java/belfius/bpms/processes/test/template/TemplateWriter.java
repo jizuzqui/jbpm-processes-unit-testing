@@ -1,9 +1,9 @@
 package belfius.bpms.processes.test.template;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,15 +25,25 @@ import belfius.bpms.processes.test.model.ProcessNode;
 import belfius.bpms.processes.test.model.ProcessNode.NodeType;
 
 public class TemplateWriter {
- 
-    static String modelName = "User";
-    static String packageName = "com.companyname.projectname";
- 
+	 
     public static void main(String[] args) {
     	
-    	if(args == null || args.length < 1) {
-    		throw new IllegalArgumentException("No process provided. Please provide the file path");
+    	System.out.println();
+    	System.out.println("Usage: execute a maven task with this command: "
+    			+ "'mvn exec:java -Dexec.mainClass=belfius.bpms.processes.test.template.TemplateWriter -Dexec.args=[\"arg1\" \"arg2\" \"arg3\"]");
+    	System.out.println();
+    	System.out.println("Example assuming your bpmn model is under src/main/resources/com/sample:");
+    	System.out.println("      mvn exec:java -Dexec.mainClass=\"belfius.bpms.processes.test.template.TemplateWriter\" "
+    			+ "-Dexec.args=[\"com/sample/CreditProcess.bpmn\" \"com.sample.somepackage\" \"CreditProcess\"]");
+    	System.out.println();
+    	
+    	if(args == null || args.length < 2) {
+    		throw new IllegalArgumentException("Wrong arguments. Please provide 1) The file path (starting from src/main/resources), 2) the class package name, 3) the process name");
     	}
+    	
+    	String processPath = args[0];
+    	String packageName = args[1];
+    	String processId = args[2];
     	
         VelocityEngine velocityEngine = new VelocityEngine();
         velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
@@ -43,14 +53,12 @@ public class TemplateWriter {
         Template t = velocityEngine.getTemplate("velocity-templates/test-helper-template.vm");
         
         VelocityContext context = new VelocityContext();
-        
-        String processPath = args[0];
-        
-        Path bpmnProcess = Path.of("src/test/resources/BACItsMe_mainProcess.bpmn");
+                
+        InputStream bpmnProcess = TemplateWriter.class.getClassLoader().getResourceAsStream(processPath);
 
         String bpmnProcessAsString;
 		try {
-			bpmnProcessAsString = Files.readString(bpmnProcess);
+			bpmnProcessAsString = new String(bpmnProcess.readAllBytes(), StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			e.printStackTrace();
 			return;
@@ -67,9 +75,6 @@ public class TemplateWriter {
         
         for (int i = 0; i < nodes.length; i++) {
 			Node node = nodes[i];
-			
-			System.out.println("Node id: " + node.getNodeType());
-			System.out.println("Node name: " + node.getName());
 			
 			if(node.getNodeType().equals(org.kie.api.definition.process.NodeType.WORKITEM_TASK)) {
 				
@@ -120,7 +125,7 @@ public class TemplateWriter {
             context.put("packagename", packageName);
         }
   
-        context.put("processName", process.getId());
+        context.put("processId", processId);
         context.put("userTasks", userTasks);
         context.put("serviceTasks", serviceTasks);
         context.put("intermediateCatchingEvents", intermediateCatchingEvents);
