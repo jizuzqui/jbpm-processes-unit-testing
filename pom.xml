@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>belfius.bpms</groupId>
 	<artifactId>jbpm-processes-unit-testing</artifactId>
-	<version>1.6.2-SNAPSHOT</version>
+	<version>2.0.0-SNAPSHOT</version>
 	
 	<properties>
 		<compiler-plugin.version>3.8.1</compiler-plugin.version>
@@ -35,6 +35,11 @@
 			<artifactId>jbpm-kie-services</artifactId>
 			<version>${version.org.kie}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.velocity</groupId>
+			<artifactId>velocity-engine-core</artifactId>
+			<version>2.3</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -57,6 +62,19 @@
 					<parameters>true</parameters>
 				</configuration>
 			</plugin>
+			<plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <configuration>
+                    <mainClass>belfius.bpms.processes.test.template.TemplateWriter</mainClass>
+                    <arguments>
+                        <argument>${processFilePath}</argument>
+                        <argument>${classPackageName}</argument>
+                        <argument>${processId}</argument>
+                    </arguments>
+                </configuration>
+            </plugin>
 		</plugins>
 	</build>
 </project>

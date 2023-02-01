@@ -75,4 +75,18 @@ public class ProcessNode {
 	public void setNodeType(NodeType nodeType) {
 		this.nodeType = nodeType;
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		
+		if(obj instanceof ProcessNode) {
+			ProcessNode node = (ProcessNode)obj;
+			
+			if((this.nodeId == null && node.getNodeId() == null) || this.nodeId.equals(node.getNodeId())
+					&& ((this.nodeName == null && node.getNodeName() == null) || this.nodeName.equals(node.getNodeName()))
+					&& this.nodeType.equals(node.getNodeType()))
+				return true;
+		}
+		return false;
+	}
 }

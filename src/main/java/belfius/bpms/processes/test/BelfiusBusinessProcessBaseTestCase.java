@@ -4,6 +4,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.PseudoColumnUsage;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,8 +24,10 @@ import org.drools.core.command.runtime.process.SetProcessInstanceVariablesComman
 import org.drools.core.time.impl.PseudoClockScheduler;
 import org.jbpm.process.audit.JPAAuditLogService;
 import org.jbpm.process.audit.NodeInstanceLog;
+import org.jbpm.runtime.manager.impl.deploy.DeploymentDescriptorManagerUtil;
 import org.jbpm.test.JbpmJUnitBaseTestCase;
 import org.junit.Before;
+import org.kie.api.builder.helper.KieModuleDeploymentConfig;
 import org.kie.api.io.Resource;
 import org.kie.api.io.ResourceType;
 import org.kie.api.runtime.KieSession;
@@ -30,7 +38,11 @@ import org.kie.api.task.TaskService;
 import org.kie.api.task.model.Status;
 import org.kie.api.task.model.Task;
 import org.kie.api.task.model.TaskSummary;
+import org.kie.internal.runtime.conf.DeploymentDescriptor;
+import org.kie.internal.runtime.conf.NamedObjectModel;
+import org.kie.internal.runtime.conf.ObjectModel;
 import org.kie.internal.runtime.manager.context.ProcessInstanceIdContext;
+import org.kie.internal.runtime.manager.deploy.DeploymentDescriptorIO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,40 +104,42 @@ public class BelfiusBusinessProcessBaseTestCase extends JbpmJUnitBaseTestCase {
 	//////////////////////////////////////	
 
 	@Before
-	public void buildRuntimeEnvironment () {
+	public void buildRuntimeEnvironment () throws IOException {
 		System.setProperty("drools.clockType", "pseudo");
 		
 		logger.debug("Creating Runtime Environment...");
 		
-		createRuntimeManager(Strategy.PROCESS_INSTANCE, definitionsMap);
+		createRuntimeManager(Strategy.SINGLETON, definitionsMap);
 		runtimeEngine = getRuntimeEngine(ProcessInstanceIdContext.get());
 		taskService = runtimeEngine.getTaskService();
 		ksession = runtimeEngine.getKieSession();
+		registerWorkItemHandlers();
 		activeWorkItemMap = new HashMap<Long, WorkItem>();
 		auditLogService = (JPAAuditLogService)runtimeEngine.getAuditService();
 		
 		logger.debug("Runtime Environment successfully created.");
 	}
-
+	
 	/**
 	 * Registers test WorkItemHandlers for each name provided.
 	 * @param workItemNames
 	 */
-	protected void registerWorkItemHandlers(ProcessNode... workItems) {
+	protected void registerWorkItemHandlers() throws IOException  {
 
 		logger.debug("Registering WorkItemHandlers...");
 		
-		for (ProcessNode processNode : workItems) {
-			// For the time being, only service tasks will be supported.
-			// However, some other nodes should be foreseen in the near future (SUBPROCESS, EVENT_SUBPROCESS, BUSINESS_RULE).
-			if(processNode.getNodeType().equals(NodeType.SERVICE_TASK)) {
-				ksession.getWorkItemManager().registerWorkItemHandler(processNode.getNodeId(), getTestWorkItemHandler());
-				logger.debug("WorkItemHandler for Service Task " + processNode.getNodeId() + " successfully registered.");
-			}
-			else
-				logger.warn(processNode.getNodeType() + " not supported, skipping it.");
-
-		}	
+		DeploymentDescriptor deploymentDescriptor = null;
+		
+		InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("META-INF/kie-deployment-descriptor.xml");
+		deploymentDescriptor = DeploymentDescriptorIO.fromXml(inputStream);
+		
+		List<NamedObjectModel> workItemHandlerList = deploymentDescriptor.getWorkItemHandlers();
+		
+		for (Iterator<NamedObjectModel> iterator = workItemHandlerList.iterator(); iterator.hasNext();) {
+			NamedObjectModel wihdef = iterator.next();
+			ksession.getWorkItemManager().registerWorkItemHandler(wihdef.getName(), getTestWorkItemHandler());
+			logger.debug("WorkItemHandler for Service Task " + wihdef.getName() + " successfully registered.");
+		}
 	}
 	
 	
